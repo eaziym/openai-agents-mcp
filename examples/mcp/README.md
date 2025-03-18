@@ -13,23 +13,44 @@ The [Model Context Protocol (MCP)](https://modelcontextprotocol.github.io/) is g
 You can specify the names of MCP servers to give an Agent access to by
 setting its `mcp_servers` property.
 
-The Agent will then automatically aggregate tools from the servers, as well as 
-any `tools` specified, and create a single extended list of tools. This means you can seamlessly 
+The Agent will then automatically aggregate tools from the servers, as well as
+any `tools` specified, and create a single extended list of tools. This means you can seamlessly
 use local tools, MCP servers, and other kinds of Agent SDK tools through a single unified syntax.
 
 ```python
-
+# Option 1: Specify MCP servers during agent creation (actually this doesn't work)
 agent = Agent(
     name="MCP Assistant",
     instructions="You are a helpful assistant with access to MCP tools.",
     tools=[your_other_tools], # Regular tool use for Agent SDK
     mcp_servers=["fetch", "filesystem"]  # Names of MCP servers from your config file (see below)
 )
+
+# Option 2: Set MCP servers after agent creation (use this)
+agent = Agent(
+    name="MCP Assistant",
+    instructions="You are a helpful assistant with access to MCP tools.",
+    tools=[your_other_tools], # Regular tool use for Agent SDK
+)
+agent.mcp_servers = ["fetch", "filesystem"]  # Names of MCP servers from your config file
+```
+
+### Environment Variables and .env Support
+
+The SDK supports loading environment variables from a `.env` file using the `python-dotenv` package. This is useful for managing API keys and other configuration variables:
+
+```python
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Now environment variables like OPENAI_API_KEY from the .env file will be available
 ```
 
 ### MCP Configuration File
 
-Configure MCP servers by creating an `mcp_agent.config.yaml` file. You can place this file in your project directory or any parent directory. 
+Configure MCP servers by creating an `mcp_agent.config.yaml` file. You can place this file in your project directory or any parent directory.
 
 Here's an example configuration file that defines three MCP servers:
 
@@ -37,19 +58,20 @@ Here's an example configuration file that defines three MCP servers:
 $schema: "https://raw.githubusercontent.com/lastmile-ai/mcp-agent/main/schema/mcp-agent.config.schema.json"
 
 mcp:
-  servers:
-    fetch:
-      command: "uvx"
-      args: ["mcp-server-fetch"]
-    filesystem:
-      command: "npx"
-      args: ["-y", "@modelcontextprotocol/server-filesystem", "."]
-    slack:
-      command: "npx"
-      args: ["-y", "@modelcontextprotocol/server-slack"]
+    servers:
+        fetch:
+            command: "uvx"
+            args: ["mcp-server-fetch"]
+        filesystem:
+            command: "npx"
+            args: ["-y", "@modelcontextprotocol/server-filesystem", "."]
+        slack:
+            command: "npx"
+            args: ["-y", "@modelcontextprotocol/server-slack"]
 ```
 
 For servers that require sensitive information like API keys, you can:
+
 1. Define them directly in the config file (not recommended for production)
 2. Use a separate `mcp_agent.secrets.yaml` file (more secure)
 3. Set them as environment variables
@@ -199,7 +221,7 @@ agent = Agent(
 
 # Search for messages
 result = await Runner.run(
-    agent, 
+    agent,
     input="What was the last message in the general channel?",
     context=context,
 )
@@ -243,8 +265,8 @@ tools = await mcp_list_tools(aggregator)
 
 ## Troubleshooting
 
-- **Tool Schema Validation Errors**: The MCP bridge automatically sanitizes tool schemas to be compatible with OpenAI's validation requirements. If you encounter schema validation errors, it may be due to unsupported schema properties.
+-   **Tool Schema Validation Errors**: The MCP bridge automatically sanitizes tool schemas to be compatible with OpenAI's validation requirements. If you encounter schema validation errors, it may be due to unsupported schema properties.
 
-- **Connection Issues**: If you have problems connecting to MCP servers, check that the servers are properly installed and that your configuration file is correctly formatted.
+-   **Connection Issues**: If you have problems connecting to MCP servers, check that the servers are properly installed and that your configuration file is correctly formatted.
 
-- **Missing Tools**: If expected tools are not available, confirm that the server is correctly defined in your `mcp_servers` list and that the server is properly configured in your `mcp_agent.config.yaml` file.
+-   **Missing Tools**: If expected tools are not available, confirm that the server is correctly defined in your `mcp_servers` list and that the server is properly configured in your `mcp_agent.config.yaml` file.

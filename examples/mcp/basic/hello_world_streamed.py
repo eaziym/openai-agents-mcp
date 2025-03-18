@@ -16,6 +16,7 @@ import asyncio
 import os
 import sys
 from typing import TYPE_CHECKING, Any
+from dotenv import load_dotenv
 
 from openai.types.responses import ResponseTextDeltaEvent
 
@@ -23,11 +24,14 @@ if TYPE_CHECKING:
     from mcp_agent.config import MCPSettings
 
 # Add the src directory to the path for imports to work
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
+# Load environment variables from .env file
+load_dotenv()
 
 from agents import Agent, Runner, function_tool, enable_verbose_stdout_logging
 
-#enable_verbose_stdout_logging()
+# enable_verbose_stdout_logging()
 
 
 # Define a simple local tool to demonstrate combining local and MCP tools
@@ -55,7 +59,7 @@ class AgentContext:
             mcp_config: Optional MCPSettings object containing the server configurations
                 If unspecified, the MCP settings are loaded from the mcp_config_path
             mcp_config_path: Optional path to the mcp_agent.config.yaml file
-                If both mcp_config and mcp_config_path are unspecified, 
+                If both mcp_config and mcp_config_path are unspecified,
                 the default discovery process will look for the config file matching
                 "mcp_agent.config.yaml" recursively up from the current working directory.
         """
@@ -92,10 +96,13 @@ async def main():
         instructions="""You are a helpful assistant with access to both local tools 
             and tools from MCP servers. Use these tools to help the user.""",
         tools=[get_current_weather],  # Local tools
-        mcp_servers=["fetch", "filesystem"],  # Specify which MCP servers to use
-                                              # These must be defined in your config
-        mcp_server_registry=None # Specify a custom MCP server registry per-agent if needed
+        # mcp_servers=["fetch", "filesystem"],  # Specify which MCP servers to use
+        # # These must be defined in your config
+        # mcp_server_registry=None,  # Specify a custom MCP server registry per-agent if needed
     )
+
+    # Set the MCP servers to use
+    agent.mcp_servers = ["fetch", "filesystem"]  # Specify which MCP servers to use
 
     # Run the agent - tools from the specified MCP servers will be automatically loaded
     result = Runner.run_streamed(
@@ -104,8 +111,11 @@ async def main():
         context=context,
     )
     async for event in result.stream_events():
-        if event.type == "raw_response_event" and isinstance(event.data, ResponseTextDeltaEvent):
+        if event.type == "raw_response_event" and isinstance(
+            event.data, ResponseTextDeltaEvent
+        ):
             print(event.data.delta, end="", flush=True)
+
 
 if __name__ == "__main__":
     asyncio.run(main())
